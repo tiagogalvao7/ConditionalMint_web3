@@ -1,10 +1,40 @@
+require("dotenv").config({ path: __dirname + "/.env" }); // <- GARANTE carregamento do .env antes de tudo
 const { ethers } = require("ethers");
 const contractData = require("./abi.json");
 const contractAddress = "0x2310c54F959012f5670A70f30EF67b7Bb883384D";
-require("dotenv").config();
 const fs = require("fs");
 const path = require("path");
-const { uploadImageToIPFS, uploadMetadataToIPFS } = require("./uploadToIPFS");
+const fetch = require("node-fetch");
+const {
+  uploadImageToPinata,
+  uploadMetadataToPinata,
+} = require("./uploadToPinata");
+
+// DEBUG: verificar se as variáveis foram carregadas corretamente
+console.log(
+  "🔐 PINATA_API_KEY:",
+  process.env.PINATA_API_KEY ? "carregado" : "NÃO DEFINIDO"
+);
+console.log(
+  "🔐 PINATA_API_SECRET:",
+  process.env.PINATA_API_SECRET ? "carregado" : "NÃO DEFINIDO"
+);
+console.log(
+  "🔑 PRIVATE_KEY:",
+  process.env.PRIVATE_KEY ? "carregado" : "NÃO DEFINIDO"
+);
+console.log("🌐 RPC_URL:", process.env.RPC_URL || "NÃO DEFINIDO");
+
+// Verifica se os dados mínimos estão presentes
+if (
+  !process.env.PRIVATE_KEY ||
+  !process.env.RPC_URL ||
+  !process.env.PINATA_API_KEY ||
+  !process.env.PINATA_API_SECRET
+) {
+  console.error("❌ Variáveis de ambiente ausentes. Verifique seu .env");
+  process.exit(1);
+}
 
 const privateKey = process.env.PRIVATE_KEY;
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
@@ -23,23 +53,26 @@ contract.on(
       )} ETH`
     );
 
-    // Simulate approval logic
     const isApproved = Math.random() > 0.5;
-
     let tokenURI = "ipfs://placeholder-metadata";
 
     if (isApproved) {
       console.log("✅ Purchase approved. Preparing NFT metadata...");
 
       try {
+        let finalImageURI = imageURI;
+
         if (!imageURI.startsWith("ipfs://")) {
-          console.log("📤 Uploading image to IPFS...");
-          const imageIPFS = await uploadImageToIPFS(imageURI);
-          console.log("🧾 Uploading metadata to IPFS...");
-          tokenURI = await uploadMetadataToIPFS(name, imageIPFS);
-        } else {
-          tokenURI = await uploadMetadataToIPFS(name, imageURI);
+          console.log("📤 Fetching and uploading image to IPFS via Pinata...");
+
+          const response = await fetch(imageURI);
+          const imageBuffer = Buffer.from(await response.arrayBuffer());
+
+          finalImageURI = await uploadImageToPinata(name, imageBuffer);
         }
+
+        console.log("🧾 Uploading metadata to IPFS via Pinata...");
+        tokenURI = await uploadMetadataToPinata(name, finalImageURI);
 
         console.log("🛠 Minting NFT...");
         const mintTx = await contract.safeMint(buyer, tokenURI, txHash);

@@ -1,21 +1,22 @@
 import { useState } from "react";
 import { ethers } from "ethers";
+import ConditionalMintABI from "./abi/ConditionalMint.json";
 import "./App.css";
 
 const ITEMS = [
   {
     name: "Cool Cat",
-    image: "/cat.jpg", // colocar esta imagem na pasta public/
-    price: "0.001", // ETH
+    image: "http://localhost:3000/cat.jpg",
+    price: "0.001",
   },
   {
     name: "Alien Punk",
-    image: "/alien.jpg",
+    image: "http://localhost:3000/alien.jpg",
     price: "0.001",
   },
 ];
 
-const platformAddress = "0x2310c54F959012f5670A70f30EF67b7Bb883384D";
+const contractAddress = "0x2310c54F959012f5670A70f30EF67b7Bb883384D";
 
 function App() {
   const [currentAccount, setCurrentAccount] = useState(null);
@@ -23,27 +24,59 @@ function App() {
 
   const connectWallet = async () => {
     if (!window.ethereum) return alert("Install MetaMask");
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts",
-    });
-    setCurrentAccount(accounts[0]);
+    try {
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+      setCurrentAccount(accounts[0]);
+    } catch (err) {
+      console.error("Wallet connection error:", err);
+      setStatus("Wallet connection failed.");
+    }
   };
 
   const purchase = async (item) => {
     try {
-      setStatus("Waiting for MetaMask...");
+      setStatus("🦊 Waiting for MetaMask...");
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const tx = await signer.sendTransaction({
-        to: platformAddress,
+      const contract = new ethers.Contract(
+        contractAddress,
+        ConditionalMintABI.abi,
+        signer
+      );
+
+      const tx = await contract.buyItem(item.name, item.image, {
         value: ethers.parseEther(item.price),
       });
-      setStatus("Transaction sent. Waiting confirmation...");
-      await tx.wait();
-      setStatus(`Purchase sent! Tx Hash: ${tx.hash}`);
+      setStatus("⏳ Transaction sent. Waiting confirmation...");
+      const receipt = await tx.wait();
+      setStatus(`✅ Tx confirmed! Hash: ${tx.hash}. Notifying backend...`);
+
+      // Esperar pelo resultado do fetch
+      const response = await fetch(
+        "http://localhost:3001/purchase-notification",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            txHash: tx.hash,
+            itemName: item.name,
+            imageURI: window.location.origin + item.image, // uso do URL completo
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("❌ Backend error: " + response.statusText);
+      }
+
+      setStatus("📨 Backend notified. NFT being processed!");
     } catch (err) {
       console.error(err);
-      setStatus("Transaction failed or rejected.");
+      setStatus("❌ Transaction or backend request failed.");
     }
   };
 
