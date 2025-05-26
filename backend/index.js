@@ -1,4 +1,4 @@
-require("dotenv").config({ path: __dirname + "/.env" }); // <- GARANTE carregamento do .env antes de tudo
+require("dotenv").config({ path: __dirname + "/.env" }); // <- Ensure .env is loaded before anything else
 const { ethers } = require("ethers");
 const contractData = require("./abi.json");
 const contractAddress = "0x2310c54F959012f5670A70f30EF67b7Bb883384D";
@@ -10,29 +10,29 @@ const {
   uploadMetadataToPinata,
 } = require("./uploadToPinata");
 
-// DEBUG: verificar se as variáveis foram carregadas corretamente
+// DEBUG: check if environment variables were loaded correctly
 console.log(
   "🔐 PINATA_API_KEY:",
-  process.env.PINATA_API_KEY ? "carregado" : "NÃO DEFINIDO"
+  process.env.PINATA_API_KEY ? "loaded" : "NOT DEFINED"
 );
 console.log(
   "🔐 PINATA_API_SECRET:",
-  process.env.PINATA_API_SECRET ? "carregado" : "NÃO DEFINIDO"
+  process.env.PINATA_API_SECRET ? "loaded" : "NOT DEFINED"
 );
 console.log(
   "🔑 PRIVATE_KEY:",
-  process.env.PRIVATE_KEY ? "carregado" : "NÃO DEFINIDO"
+  process.env.PRIVATE_KEY ? "loaded" : "NOT DEFINED"
 );
-console.log("🌐 RPC_URL:", process.env.RPC_URL || "NÃO DEFINIDO");
+console.log("🌐 RPC_URL:", process.env.RPC_URL || "NOT DEFINED");
 
-// Verifica se os dados mínimos estão presentes
+// Validate required environment variables
 if (
   !process.env.PRIVATE_KEY ||
   !process.env.RPC_URL ||
   !process.env.PINATA_API_KEY ||
   !process.env.PINATA_API_SECRET
 ) {
-  console.error("❌ Variáveis de ambiente ausentes. Verifique seu .env");
+  console.error("❌ Missing environment variables. Check your .env file.");
   process.exit(1);
 }
 
@@ -82,7 +82,7 @@ contract.on(
         console.error("❌ Error during minting:", err);
       }
     } else {
-      console.log("❌ Purchase rejected. Refunding...");
+      console.log("❌ Purchase rejected. Initiating refund...");
       try {
         const refundTx = await contract.refund(buyer, value, txHash);
         await refundTx.wait();
@@ -92,7 +92,7 @@ contract.on(
       }
     }
 
-    // Log purchase result
+    // Log the purchase result
     const logPath = path.join(__dirname, "tx-log.json");
     let log = {};
     if (fs.existsSync(logPath)) {
