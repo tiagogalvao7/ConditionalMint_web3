@@ -3,7 +3,7 @@ const FormData = require("form-data");
 require("dotenv").config({ path: __dirname + "/.env" });
 
 /**
- * Upload de imagem para Pinata IPFS
+ * Image upload to PINATA IPFS
  */
 async function uploadImageToPinata(filename, imageBuffer) {
   try {
@@ -47,7 +47,7 @@ async function uploadImageToPinata(filename, imageBuffer) {
 }
 
 /**
- * Upload de metadados JSON para Pinata IPFS
+ * JSON metadata Upload to Pinata IPFS
  */
 async function uploadMetadataToPinata(name, imageIPFSUrl) {
   try {
@@ -56,7 +56,7 @@ async function uploadMetadataToPinata(name, imageIPFSUrl) {
 
     if (!apiKey || !apiSecret) {
       throw new Error(
-        "PINATA_API_KEY ou PINATA_API_SECRET não definidos no .env"
+        "PINATA_API_KEY or PINATA_API_SECRET not defined in .env"
       );
     }
 
@@ -81,7 +81,7 @@ async function uploadMetadataToPinata(name, imageIPFSUrl) {
     return `ipfs://${cid}`;
   } catch (err) {
     console.error(
-      "🔥 Erro ao subir metadata para IPFS via Pinata:",
+      "🔥 Error uploading metadata to IPFS via Pinata:",
       err.response?.data || err.message
     );
     throw err;

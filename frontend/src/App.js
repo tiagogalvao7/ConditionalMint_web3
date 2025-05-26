@@ -6,12 +6,14 @@ import "./App.css";
 const ITEMS = [
   {
     name: "Cool Cat",
-    image: "http://localhost:3000/cat.jpg",
+    image:
+      "https://gateway.pinata.cloud/ipfs/bafkreiapdg43qxsuadu3ge7cuxwe2xtzvap6luj37hicciesvb5btlwjzy",
     price: "0.001",
   },
   {
     name: "Alien Punk",
-    image: "http://localhost:3000/alien.jpg",
+    image:
+      "https://gateway.pinata.cloud/ipfs/bafkreiemdkzemxpaqxus5ba7ut2f6gcddeqlchum7i6rtl7osq2fxkmrky",
     price: "0.001",
   },
 ];
