@@ -24,7 +24,7 @@ const contractAddress = "0x2310c54F959012f5670A70f30EF67b7Bb883384D";
 const BASE_URL =
   window.location.hostname === "localhost"
     ? "http://localhost:3001"
-    : "https://conditionalmint_web3.up.railway.app";
+    : "https://conditional-mint-web3.vercel.app";
 
 function App() {
   const [currentAccount, setCurrentAccount] = useState(null);
