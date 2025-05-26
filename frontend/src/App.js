@@ -85,7 +85,7 @@ function App() {
         const statusRes = await fetch(`${BASE_URL}/tx-status/${tx.hash}`);
         if (!statusRes.ok) {
           console.error("Failed to fetch transaction status");
-          break; // Sai do loop sem atualizar status visível
+          break;
         }
         const data = await statusRes.json();
         finalStatus = data.status;
