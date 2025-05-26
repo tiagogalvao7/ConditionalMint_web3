@@ -20,7 +20,6 @@ const ITEMS = [
 
 const contractAddress = "0x2310c54F959012f5670A70f30EF67b7Bb883384D";
 
-// Só o URL de produção, remove localhost
 const BASE_URL = "https://conditional-mint-web3.vercel.app";
 
 function App() {
@@ -37,7 +36,7 @@ function App() {
       setStatus("Wallet connected.");
     } catch (err) {
       console.error("Wallet connection error:", err);
-      setStatus("Wallet connection failed.");
+      // Retirado status de erro aqui também
     }
   };
 
@@ -60,7 +59,6 @@ function App() {
       await tx.wait();
       setStatus(`✅ Tx confirmed! Hash: ${tx.hash}. Notifying backend...`);
 
-      // Backend notification
       const notifyResponse = await fetch(`${BASE_URL}/purchase-notification`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,12 +70,12 @@ function App() {
       });
 
       if (!notifyResponse.ok) {
-        throw new Error(
+        // Apenas loga o erro, sem atualizar status visível
+        console.error(
           `Backend error: ${notifyResponse.status} ${notifyResponse.statusText}`
         );
       }
 
-      // Poll backend for final status
       setStatus("⌛ Awaiting backend processing...");
 
       let finalStatus = "pending";
@@ -85,10 +83,12 @@ function App() {
       let retries = 0;
 
       while (finalStatus === "pending" && retries < maxRetries) {
-        await new Promise((resolve) => setTimeout(resolve, 3000)); // 3s delay
+        await new Promise((resolve) => setTimeout(resolve, 3000));
         const statusRes = await fetch(`${BASE_URL}/tx-status/${tx.hash}`);
-        if (!statusRes.ok)
-          throw new Error("Failed to fetch transaction status");
+        if (!statusRes.ok) {
+          console.error("Failed to fetch transaction status");
+          break; // Sai do loop sem atualizar status visível
+        }
         const data = await statusRes.json();
         finalStatus = data.status;
         retries++;
@@ -98,12 +98,11 @@ function App() {
         setStatus("🎉 NFT minted successfully!");
       } else if (finalStatus === "rejected") {
         setStatus("💸 Purchase rejected and refunded.");
-      } else {
-        setStatus("❌ Backend processing timeout.");
       }
+      // Se timeout ou erro no fetch, não atualiza status para erro
     } catch (err) {
       console.error(err);
-      setStatus("❌ Transaction or backend request failed.");
+      // Não atualiza status para erro visível aqui também
     }
   };
 
