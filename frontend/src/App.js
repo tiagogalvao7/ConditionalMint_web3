@@ -36,7 +36,6 @@ function App() {
       setStatus("Wallet connected.");
     } catch (err) {
       console.error("Wallet connection error:", err);
-      // Retirado status de erro aqui também
     }
   };
 
@@ -70,7 +69,6 @@ function App() {
       });
 
       if (!notifyResponse.ok) {
-        // Apenas loga o erro, sem atualizar status visível
         console.error(
           `Backend error: ${notifyResponse.status} ${notifyResponse.statusText}`
         );
@@ -99,10 +97,8 @@ function App() {
       } else if (finalStatus === "rejected") {
         setStatus("💸 Purchase rejected and refunded.");
       }
-      // Se timeout ou erro no fetch, não atualiza status para erro
     } catch (err) {
       console.error(err);
-      // Não atualiza status para erro visível aqui também
     }
   };
 
