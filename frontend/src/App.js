@@ -20,6 +20,12 @@ const ITEMS = [
 
 const contractAddress = "0x2310c54F959012f5670A70f30EF67b7Bb883384D";
 
+// Choose the base URL depending on the hostname (localhost or production)
+const BASE_URL =
+  window.location.hostname === "localhost"
+    ? "http://localhost:3001"
+    : "https://conditionalmint_web3.up.railway.app";
+
 function App() {
   const [currentAccount, setCurrentAccount] = useState(null);
   const [status, setStatus] = useState("");
@@ -31,6 +37,7 @@ function App() {
         method: "eth_requestAccounts",
       });
       setCurrentAccount(accounts[0]);
+      setStatus("Wallet connected.");
     } catch (err) {
       console.error("Wallet connection error:", err);
       setStatus("Wallet connection failed.");
@@ -52,30 +59,51 @@ function App() {
         value: ethers.parseEther(item.price),
       });
       setStatus("⏳ Transaction sent. Waiting confirmation...");
-      const receipt = await tx.wait();
+
+      await tx.wait();
       setStatus(`✅ Tx confirmed! Hash: ${tx.hash}. Notifying backend...`);
 
-      // Esperar pelo resultado do fetch
-      const response = await fetch(
-        "http://localhost:3001/purchase-notification",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            txHash: tx.hash,
-            itemName: item.name,
-            imageURI: window.location.origin + item.image, // uso do URL completo
-          }),
-        }
-      );
+      // Backend notification
+      const notifyResponse = await fetch(`${BASE_URL}/purchase-notification`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          txHash: tx.hash,
+          itemName: item.name,
+          imageURI: item.image,
+        }),
+      });
 
-      if (!response.ok) {
-        throw new Error("❌ Backend error: " + response.statusText);
+      if (!notifyResponse.ok) {
+        throw new Error(
+          `Backend error: ${notifyResponse.status} ${notifyResponse.statusText}`
+        );
       }
 
-      setStatus("📨 Backend notified. NFT being processed!");
+      // Poll backend for final status
+      setStatus("⌛ Awaiting backend processing...");
+
+      let finalStatus = "pending";
+      const maxRetries = 20;
+      let retries = 0;
+
+      while (finalStatus === "pending" && retries < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 3000)); // 3s delay
+        const statusRes = await fetch(`${BASE_URL}/tx-status/${tx.hash}`);
+        if (!statusRes.ok)
+          throw new Error("Failed to fetch transaction status");
+        const data = await statusRes.json();
+        finalStatus = data.status;
+        retries++;
+      }
+
+      if (finalStatus === "approved") {
+        setStatus("🎉 NFT minted successfully!");
+      } else if (finalStatus === "rejected") {
+        setStatus("💸 Purchase rejected and refunded.");
+      } else {
+        setStatus("❌ Backend processing timeout.");
+      }
     } catch (err) {
       console.error(err);
       setStatus("❌ Transaction or backend request failed.");

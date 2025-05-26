@@ -1,4 +1,11 @@
-require("dotenv").config({ path: __dirname + "/.env" }); // <- Ensure .env is loaded before anything else
+require("dotenv").config({ path: __dirname + "/.env" });
+
+const express = require("express");
+const app = express();
+const cors = require("cors");
+app.use(cors());
+app.use(express.json());
+
 const { ethers } = require("ethers");
 const contractData = require("./abi.json");
 const contractAddress = "0x2310c54F959012f5670A70f30EF67b7Bb883384D";
@@ -39,9 +46,9 @@ if (
 const privateKey = process.env.PRIVATE_KEY;
 const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
 const wallet = new ethers.Wallet(privateKey, provider);
-
 const contract = new ethers.Contract(contractAddress, contractData, wallet);
 
+// 🔔 Listen for contract events
 console.log("✅ Listening for PurchaseInitiated events...");
 
 contract.on(
@@ -64,7 +71,6 @@ contract.on(
 
         if (!imageURI.startsWith("ipfs://")) {
           console.log("📤 Fetching and uploading image to IPFS via Pinata...");
-
           const response = await fetch(imageURI);
           const imageBuffer = Buffer.from(await response.arrayBuffer());
 
@@ -102,3 +108,36 @@ contract.on(
     fs.writeFileSync(logPath, JSON.stringify(log, null, 2));
   }
 );
+
+// 📨 HTTP endpoint for frontend notification
+app.post("/purchase-notification", (req, res) => {
+  const { txHash, itemName, imageURI } = req.body;
+  console.log("📨 Received frontend notification:");
+  console.log("- txHash:", txHash);
+  console.log("- itemName:", itemName);
+  console.log("- imageURI:", imageURI);
+
+  // You can add logging, metrics, or queueing here if needed
+  res.status(200).json({ message: "Notification received by backend." });
+});
+
+// New endpoint to return the status of a transaction
+app.get("/tx-status/:txHash", (req, res) => {
+  const { txHash } = req.params;
+  const logPath = path.join(__dirname, "tx-log.json");
+
+  if (!fs.existsSync(logPath)) {
+    return res.status(404).json({ error: "No transaction log found" });
+  }
+
+  const log = JSON.parse(fs.readFileSync(logPath));
+  const status = log[txHash] || "pending";
+
+  res.json({ status });
+});
+
+// Start HTTP server
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+  console.log(`🚀 HTTP server listening on port ${PORT}`);
+});
