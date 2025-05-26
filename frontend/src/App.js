@@ -20,11 +20,8 @@ const ITEMS = [
 
 const contractAddress = "0x2310c54F959012f5670A70f30EF67b7Bb883384D";
 
-// Choose the base URL depending on the hostname (localhost or production)
-const BASE_URL =
-  window.location.hostname === "localhost"
-    ? "http://localhost:3001"
-    : "https://conditional-mint-web3.vercel.app";
+// Só o URL de produção, remove localhost
+const BASE_URL = "https://conditional-mint-web3.vercel.app";
 
 function App() {
   const [currentAccount, setCurrentAccount] = useState(null);
